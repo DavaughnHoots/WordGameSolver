@@ -1,4 +1,5 @@
 # Autocomplete and Spellchecker
+
 This program provides autocomplete and spellchecking functionality as you type in any application. It uses a trie-based data structure to efficiently search for word suggestions and the `pyspellchecker` library to check for spelling errors.
 
 ## Features
@@ -16,6 +17,7 @@ This program provides autocomplete and spellchecking functionality as you type i
 - keyboard
 - pyspellchecker
 -
+
 ## Installation
 
 1. Install the required packages:
@@ -27,7 +29,7 @@ This program provides autocomplete and spellchecking functionality as you type i
 3. Make sure the `new_words.txt` file is in the same folder as the main script.
 
 4. Run the script:
-    
+
         python newautocorrect4.py
 
 ## Usage
