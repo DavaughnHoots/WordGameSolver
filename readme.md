@@ -48,6 +48,16 @@ This program provides autocomplete and spellchecking functionality as you type i
 
 To create an executable, follow the instructions provided in this conversation to use `pyinstaller`. Make sure to include the `new_words.txt` file with the resulting executable when distributing it.
 
+## Known Issues
+
+- The program does not work in some applications, such as the Windows command prompt and the Windows search bar. This is due to the way these applications handle keyboard input.
+
+- As humans, sometimes we start words, and then decide we want to change the word mid word. For example, we might start typing "hello" and then decide we want to type "help". Sometimes we will delete the entire word and start over, but other times we will just delete the last few letters and then continue typing. The program cannot always detect this since it doesn't track how many letters have been typed since the last break key (Space, Enter, etc.). This can result in the program suggesting words that are not relevant to the current word being typed. Often you will see a word get replaced with "i" or another short word. This is because the program is suggesting words based on the last few letters typed, and the last few letters typed are not enough to suggest a relevant word. This limitation can probably be fixed by adding an index to the trie that tracks the number of letters typed since the last break key.
+
+- Sometimes it seems like the words lists fail to load. If the word list is to big, it may take extra time to load the list of suggested words.
+
 ## License
 
 This program is provided under the MIT License. See the LICENSE file for more information.
+
+
