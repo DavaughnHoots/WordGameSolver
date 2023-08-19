@@ -59,5 +59,3 @@ To create an executable, follow the instructions provided in this conversation t
 ## License
 
 This program is provided under the MIT License. See the LICENSE file for more information.
-
-

@@ -2,11 +2,16 @@
 import sys
 import keyboard
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QListWidget, QPushButton, QCheckBox, QComboBox, QDialog, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QListWidget, QPushButton, QCheckBox, QComboBox, QDialog, QHBoxLayout, QInputDialog, QMessageBox
 from spellchecker import SpellChecker
 import time
 import string
 import os
+import logging
+
+# Logging
+logging.basicConfig(filename="WordSolver2.log", level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger(__name__)
 
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
@@ -71,6 +76,176 @@ class WordList:
     
     def set_dir(self, dir):
         self.dir = dir
+
+class CustomWordListEditor(QDialog):
+    """
+    A class for editing a custom word list
+
+    Attributes:
+        word_list (WordList): The word list to edit
+
+    Methods:
+        load_words: Loads the words from the word list
+        add_word: Adds a word to the word list
+        edit_word: Edits a word in the word list
+        delete_word: Deletes a word from the word list
+        save_changes: Saves the changes to the word list
+        close_editor: Closes the editor
+
+    Args:
+        parent (QWidget): The parent widget
+        word_list (WordList): The word list to edit
+
+    Returns:
+        None
+
+    Example:
+        editor = CustomWordListEditor(self, word_list)
+    """
+
+    def __init__(self, parent, word_list: WordList) -> None:
+        super().__init__(parent)
+        self.word_list = word_list
+        self.setWindowTitle("Custom Word List Editor")
+
+        # Create UI components
+        self.list_widget = QListWidget(self)
+        self.add_button = QPushButton("Add")
+        self.edit_button = QPushButton("Edit")
+        self.delete_button = QPushButton("Delete")
+        self.save_button = QPushButton("Save")
+        self.close_button = QPushButton("Close")
+
+        # Connect buttons to functions
+        self.add_button.clicked.connect(self.add_word)
+        self.edit_button.clicked.connect(self.edit_word)
+        self.delete_button.clicked.connect(self.delete_word)
+        self.save_button.clicked.connect(self.save_changes)
+        self.close_button.clicked.connect(self.close_editor)
+
+        # Layout
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.edit_button)
+        button_layout.addWidget(self.delete_button)
+        button_layout.addWidget(self.save_button)
+        button_layout.addWidget(self.close_button)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.list_widget)
+        main_layout.addLayout(button_layout)
+
+        self.setLayout(main_layout)
+
+        # Load words
+        self.load_words()
+
+    def load_words(self) -> None:
+        """
+        Loads the words from the word list
+        
+        Args:
+            None
+            
+        Returns:
+            None
+            
+        Example:
+            self.load_words()
+            """
+        # Clear existing items
+        self.list_widget.clear()
+        # Add words from the custom word list
+        for word in self.word_list.get_words():
+            self.list_widget.addItem(word)
+
+
+    def add_word(self) -> None:
+        """
+        Adds a word to the word list
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Example:
+            self.add_word()
+        """
+        text, ok = QInputDialog.getText(self, "Add Word", "Enter the word:")
+        if ok and text:
+            self.list_widget.addItem(text)
+            self.word_list.get_words().append(text)
+
+    def edit_word(self):
+        """
+        Edits a word in the word list
+        
+        Args:
+            None
+            
+        Returns:
+            None
+            
+        Example:
+            self.edit_word()
+            """
+        if selected_item := self.list_widget.currentItem():
+            old_text = selected_item.text()
+            new_text, ok = QInputDialog.getText(self, "Edit Word", "Edit the word:", text=old_text)
+            if ok and new_text:
+                selected_item.setText(new_text)
+                self.word_list.get_words().remove(old_text)
+                self.word_list.get_words().append(new_text)
+
+    def delete_word(self):
+        """
+        Deletes a word from the word list
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Example:
+            self.delete_word()
+        """
+        if selected_item := self.list_widget.currentItem():
+            self.word_list.get_words().remove(selected_item.text())
+            self.list_widget.takeItem(self.list_widget.row(selected_item))
+
+
+    def save_changes(self):
+        """
+        Saves the changes to the word list
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Example:
+            self.save_changes()
+        """
+        # Save the custom word list to a file
+        with open(self.word_list.get_dir(), "w") as file:
+            for word in self.word_list.get_words():
+                file.write(word + "\n")
+        QMessageBox.information(self, "Success", "Changes saved successfully!")
+
+        # Update the trie
+        trie_start, trie_end = self.word_list.get_trie()
+        trie_start.root = TrieNode()  # Clear the trie
+        trie_end.root = TrieNode()
+        for word in self.word_list.get_words():
+            trie_start.insert(word)
+            trie_end.insert(word, reverse=True)
+
+    def close_editor(self):
+        self.close()
 
 class Settings:
     """
@@ -172,7 +347,7 @@ class Trie:
             suggestions = []
             max_suggestions = 5
             search_helper(trie.root, "")
-            print(suggestions)
+            logger.info(suggestions)
         """
         node = self.root
         if reverse:
@@ -408,6 +583,12 @@ class AutocompleteWindow(QMainWindow):
         settings_dialog.exec_()
         self.settings_dialog = settings_dialog
 
+    def open_custom_word_list_editor(self):
+        custom_word_list = word_list_manager.get_word_list("Custom")
+        editor = CustomWordListEditor(None, custom_word_list)
+        editor.exec_()
+
+
 class SettingsDialog(QDialog):
     """
     A dialog to change the settings of the program
@@ -491,9 +672,13 @@ class SettingsDialog(QDialog):
         self.settings.autocomplete_key = self.autocomplete_key_combobox.currentText()
         selected_word_list_name = self.word_list_combobox.currentText()
         selected_word_list = word_list_manager.get_word_list(selected_word_list_name)
-        global trie_start, trie_end
-        trie_start, trie_end = selected_word_list.get_trie()
-        self.close()   
+        if selected_word_list is not None:
+            global trie_start, trie_end
+            trie_start, trie_end = selected_word_list.get_trie()
+        else:
+            logger.error(f"Word list with name {selected_word_list_name} not found.")
+            # Handle the error as needed, e.g., show an error message to the user
+        self.close()  
 
 class WordListManager:
     """
@@ -516,9 +701,9 @@ class WordListManager:
         manager = WordListManager()
         word_list = manager.load_word_list("English", "english_words.txt")
         if word_list:
-            print(f"Word list '{word_list.name}' loaded successfully!")
+            logger.info(f"Word list '{word_list.name}' loaded successfully!")
         else:
-            print("Failed to load word list.")
+            logger.info("Failed to load word list.")
     """
 
     def __init__(self):
@@ -562,15 +747,33 @@ class WordListManager:
                     trie_start.insert(word)
                     trie_end.insert(word, reverse=True)
         except FileNotFoundError:
-            print(f"File {filename} not found.")
+            logger.error(f"File {filename} not found.")
             return None
 
         # Create a WordList object and store it
+        logger.info(f"Loaded {len(words)} words from {filename}.")
         word_list = WordList(name, filename)
         word_list.set_words(words)
         word_list.set_trie((trie_start, trie_end))
         self.word_lists[name] = word_list
+        logger.info(f"Word list '{word_list.name}' loaded successfully!")
         return word_list
+    
+    def get_word_list(self, name):
+        """
+        Returns the WordList object with the given name.
+
+        Args:
+            name (str): The name of the word list.
+
+        Returns:
+            WordList or None: The WordList object if found, None otherwise.
+
+        Example:
+            manager = WordListManager()
+            word_list = manager.get_word_list("English")
+        """
+        return self.word_lists[name] if name in self.word_lists else None
 
 def toggle_program():
     """
@@ -846,11 +1049,13 @@ settings = Settings()
 suggestion_list_active = False
 
 word_list_manager = WordListManager()
-word_list_manager.load_word_list("Unnoticable", "unnoticable.txt")
-word_list_manager.load_word_list("Risky", "risky.txt")
-word_list_manager.load_word_list("BestList", "BestList.txt")
-word_list_manager.load_word_list("Suspicious", "BABYHACKER.txt")
-word_list_manager.load_word_list("Obvious", "EXTREMEHACKER.txt")
+word_list_manager.load_word_list(name="Unnoticable", filename="unnoticable.txt")
+word_list_manager.load_word_list(name="Risky", filename="risky.txt")
+word_list_manager.load_word_list(name="BestList.txt", filename="BestList.txt")
+word_list_manager.load_word_list(name="Suspicious", filename="BABYHACKER.txt")
+word_list_manager.load_word_list(name="Obvious", filename="EXTREMEHACKER.txt")
+
+word_list_manager.load_word_list("Custom", "Custom.txt")
 
 app = QApplication(sys.argv)
 autocomplete_window = AutocompleteWindow()
@@ -864,11 +1069,16 @@ toggle_button = QPushButton("Toggle ON/OFF")
 toggle_button.setCheckable(True)
 toggle_button.setChecked(True)
 
+# Create the button to open the custom word list editor
+edit_custom_list_button = QPushButton("Edit Custom Word List")
+edit_custom_list_button.clicked.connect(autocomplete_window.open_custom_word_list_editor)
+
 # Create the layout
 layout = QVBoxLayout()
 layout.addWidget(autocomplete_window.list_widget)
 layout.addWidget(toggle_button)
 layout.addWidget(settings_button)
+layout.addWidget(edit_custom_list_button)
 
 # Create the main widget and set the layout
 main_widget = QWidget()

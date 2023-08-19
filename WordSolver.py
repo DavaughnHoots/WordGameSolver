@@ -46,7 +46,7 @@ unnoticable = WordList("Unnoticable", "unnoticable.txt")
 risky = WordList("Risky", "risky.txt")
 babyhacker = WordList("Baby Hacker", "BABYHACKER.txt")
 extremehacker = WordList("Extreme Hacker", "EXTREMEHACKER.txt")
-los = WordList("Los", "los.txt")
+BestList = WordList("BestList", "BestList.txt")
 custom = WordList("Custom", "Custom.txt")
 
 class Settings:
@@ -168,7 +168,7 @@ class SettingsDialog(QDialog):
 
         self.word_list_combobox = QComboBox()
         
-        self.word_list_combobox.addItems(["unnoticable.txt", "risky.txt", "BABYHACKER.txt", "EXTREMEHACKER.txt", "los.txt", "Custom.txt"])  # Add your word list file names here        
+        self.word_list_combobox.addItems(["unnoticable.txt", "risky.txt", "BABYHACKER.txt", "EXTREMEHACKER.txt", "BestList.txt", "Custom.txt"])  # Add your word list file names here        
         #self.word_list_combobox.setCurrentText("risky.txt")  # Set the default word list
         layout.addWidget(self.word_list_combobox)
         button = QPushButton("Close")
@@ -183,7 +183,7 @@ class SettingsDialog(QDialog):
         self.settings.auto_complete_enabled = self.auto_complete_checkbox.isChecked()
         self.settings.autocomplete_key = self.autocomplete_key_combobox.currentText()
 
-        word_lists = ["unnoticable.txt", "risky.txt", "BABYHACKER.txt", "EXTREMEHACKER.txt", "los.txt", "Custom.txt"]
+        word_lists = ["unnoticable.txt", "risky.txt", "BABYHACKER.txt", "EXTREMEHACKER.txt", "BestList.txt", "Custom.txt"]
         selected_word_list = word_lists[self.word_list_combobox.currentIndex()]
 
         global trie_start, trie_end

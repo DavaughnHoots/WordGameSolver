@@ -1,0 +1,12 @@
+2023-08-19 19:52:48,767 INFO Loaded 10000 words from unnoticable.txt.
+2023-08-19 19:52:48,767 INFO Word list 'Unnoticable' loaded successfully!
+2023-08-19 19:52:49,997 INFO Loaded 83667 words from risky.txt.
+2023-08-19 19:52:49,997 INFO Word list 'Risky' loaded successfully!
+2023-08-19 19:52:59,275 INFO Loaded 334939 words from BestList.txt.
+2023-08-19 19:52:59,275 INFO Word list 'BestList.txt' loaded successfully!
+2023-08-19 19:53:04,038 INFO Loaded 115555 words from BABYHACKER.txt.
+2023-08-19 19:53:04,038 INFO Word list 'Suspicious' loaded successfully!
+2023-08-19 19:53:28,286 INFO Loaded 466550 words from EXTREMEHACKER.txt.
+2023-08-19 19:53:28,286 INFO Word list 'Obvious' loaded successfully!
+2023-08-19 19:53:28,287 INFO Loaded 1 words from Custom.txt.
+2023-08-19 19:53:28,287 INFO Word list 'Custom' loaded successfully!
