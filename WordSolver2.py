@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget,
                             QListWidget, QPushButton, QCheckBox, QComboBox, 
                             QDialog, QHBoxLayout, QInputDialog, QMessageBox)
 from spellchecker import SpellChecker
+from functools import lru_cache
 
 
 # Logging
@@ -22,9 +23,9 @@ script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 CUSTOM_WORD_LIST_FILENAME = "Custom.txt"
 UNNOTICABLE_WORD_LIST_FILENAME = "unnoticable.txt"
 RISKY_WORD_LIST_FILENAME = "risky.txt"
-BABYHACKER_WORD_LIST_FILENAME = "BABYHACKER.txt"
+BABYHACKER_WORD_LIST_FILENAME = "Suspicious.txt"
 BESTLIST_WORD_LIST_FILENAME = "BestList.txt"
-EXTREMEHACKER_WORD_LIST_FILENAME = "EXTREMEHACKER.txt"
+EXTREMEHACKER_WORD_LIST_FILENAME = "Obvious.txt"
 
 class WordList:
     """
@@ -842,6 +843,7 @@ class WordListManager:
         # The list widget is cleared, so that it does not contain any suggestions from before
         autocomplete_window.list_widget.clear()
 
+    @lru_cache(maxsize=100000)
     def get_suggestions(self):
         """
         This function returns a list of suggestions for the current word.
@@ -864,10 +866,6 @@ class WordListManager:
             get_suggestions("py")
         
         """
-        # This function uses the trie data structure to find suggestions for the current word.
-        # It first checks for words that start with the current word, then for words that end with the current word.
-        # It then checks for words that contain the current word, but do not start or end with the current word.
-        # The function returns a list of suggestions sorted by length, with the shortest suggestions first.
         suggestions_start = trie_start.search(self, max_suggestions=5)
         suggestions_end = trie_end.search(self, reverse=True, max_suggestions=3)
 
@@ -1068,7 +1066,7 @@ def autocomplete_and_replace(current_word):
     if not current_word or current_word[-1] in string.punctuation:
         return
 
-    suggestions = get_suggestions(current_word)
+    suggestions = word_list_manager.get_suggestions(current_word)
     corrected_word = suggestions[0] if suggestions else current_word
 
     # if autocomplete checkbox is unchecked, return immediately
@@ -1138,8 +1136,8 @@ spell = SpellChecker()
 program_enabled = True
 
 # Connect the toggle button to the function
-toggle_button.clicked.connect(toggle_program)
+toggle_button.clicked.connect(settings.toggle_program())
 
 # Listen for key presses
-keyboard.hook(lambda e: process_key(e, settings))
+keyboard.hook(lambda e: word_list_manager.process_key(e, settings))
 sys.exit(app.exec_())
