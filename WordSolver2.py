@@ -672,13 +672,13 @@ class SettingsDialog(QDialog):
         self.settings.autocomplete_key = self.autocomplete_key_combobox.currentText()
         selected_word_list_name = self.word_list_combobox.currentText()
         selected_word_list = word_list_manager.get_word_list(selected_word_list_name)
-        if selected_word_list is not None:
-            global trie_start, trie_end
-            trie_start, trie_end = selected_word_list.get_trie()
-        else:
-            logger.error(f"Word list with name {selected_word_list_name} not found.")
-            # Handle the error as needed, e.g., show an error message to the user
-        self.close()  
+        if selected_word_list is None:
+            logger.info(f"Word list with name {selected_word_list_name} not found.")
+            return  # Return early if the word list is not found
+
+        global trie_start, trie_end
+        trie_start, trie_end = selected_word_list.get_trie()
+        self.close()
 
 class WordListManager:
     """
@@ -741,14 +741,28 @@ class WordListManager:
         file_path = os.path.join(script_dir, filename)
         try:
             with open(file_path, "r") as f:
-                for word in f:
-                    word = word.strip()
-                    words.append(word)
-                    trie_start.insert(word)
-                    trie_end.insert(word, reverse=True)
+                if f.readable():
+                    for word in f:
+                        word = word.strip()
+                        if not word.isalpha():  # Ensurglogg glogg e the word only contains letters
+                            logger.info(f"Invalid word found: {word}")
+                            continue
+                        words.append(word)
+                        trie_start.insert(word)
+                        trie_end.insert(word, reverse=True)
+                else:
+                    logger.info(f"File {filename} is not readable.")
+                    return None
         except FileNotFoundError:
             logger.error(f"File {filename} not found.")
             return None
+        except PermissionError
+            logger.error(f"Permission denied when accessing {filename}.")
+            return None
+        except IOError as e:
+            logger.error(f"An I/O error occurred when reading {filename}: {str(e)}")
+            return None
+
 
         # Create a WordList object and store it
         logger.info(f"Loaded {len(words)} words from {filename}.")
@@ -774,6 +788,20 @@ class WordListManager:
             word_list = manager.get_word_list("English")
         """
         return self.word_lists[name] if name in self.word_lists else None
+    
+    def validate_word_lists(self):
+        # List of required word lists
+        required_word_lists = ["Custom", "Unnoticable", "Risky", "BestList", "Suspicious", "Obvious"]
+
+        # Check each word list
+        for name in required_word_lists:
+            filename = f"{name.lower()}.txt"
+            word_list = self.load_word_list(name, filename)
+            if word_list is None:
+                logger.error(f"Word list with name {name} not found.")
+                return False
+
+        return True
 
 def toggle_program():
     """
@@ -1029,7 +1057,6 @@ def auto_correct(current_word: str) -> None:
             autocomplete_window.list_widget.clear()  # Clear the suggestions
 
 def autocomplete_and_replace(current_word):
-
     if not current_word or current_word[-1] in string.punctuation:
         return
 
@@ -1049,14 +1076,20 @@ settings = Settings()
 suggestion_list_active = False
 
 word_list_manager = WordListManager()
+
 word_list_manager.load_word_list(name="Unnoticable", filename="unnoticable.txt")
 word_list_manager.load_word_list(name="Risky", filename="risky.txt")
-word_list_manager.load_word_list(name="BestList.txt", filename="BestList.txt")
+word_list_manager.load_word_list(name="BestList", filename="BestList.txt")
 word_list_manager.load_word_list(name="Suspicious", filename="BABYHACKER.txt")
 word_list_manager.load_word_list(name="Obvious", filename="EXTREMEHACKER.txt")
 
 word_list_manager.load_word_list("Custom", "Custom.txt")
 
+# Validate the word lists
+if not word_list_manager.validate_word_lists():
+    logger.error("One or more required word lists were not found. Exiting application.")
+    sys.exit(1)
+    
 app = QApplication(sys.argv)
 autocomplete_window = AutocompleteWindow()
 
