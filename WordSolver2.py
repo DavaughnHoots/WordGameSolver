@@ -1,19 +1,30 @@
 
 import sys
-import keyboard
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QListWidget, QPushButton, QCheckBox, QComboBox, QDialog, QHBoxLayout, QInputDialog, QMessageBox
-from spellchecker import SpellChecker
 import time
 import string
 import os
 import logging
+
+import keyboard
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
+                            QListWidget, QPushButton, QCheckBox, QComboBox, 
+                            QDialog, QHBoxLayout, QInputDialog, QMessageBox)
+from spellchecker import SpellChecker
+
 
 # Logging
 logging.basicConfig(filename="WordSolver2.log", level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+CUSTOM_WORD_LIST_FILENAME = "Custom.txt"
+UNNOTICABLE_WORD_LIST_FILENAME = "unnoticable.txt"
+RISKY_WORD_LIST_FILENAME = "risky.txt"
+BABYHACKER_WORD_LIST_FILENAME = "BABYHACKER.txt"
+BESTLIST_WORD_LIST_FILENAME = "BestList.txt"
+EXTREMEHACKER_WORD_LIST_FILENAME = "EXTREMEHACKER.txt"
 
 class WordList:
     """
@@ -588,7 +599,6 @@ class AutocompleteWindow(QMainWindow):
         editor = CustomWordListEditor(None, custom_word_list)
         editor.exec_()
 
-
 class SettingsDialog(QDialog):
     """
     A dialog to change the settings of the program
@@ -756,7 +766,7 @@ class WordListManager:
         except FileNotFoundError:
             logger.error(f"File {filename} not found.")
             return None
-        except PermissionError
+        except PermissionError:
             logger.error(f"Permission denied when accessing {filename}.")
             return None
         except IOError as e:
@@ -803,154 +813,152 @@ class WordListManager:
 
         return True
 
-def toggle_program():
-    """
-    This function is called when the toggle button is pressed. It toggles the program_enabled variable,
-    and changes the text of the button to reflect the new state of the program.
+    def toggle_program():
+        """
+        This function is called when the toggle button is pressed. It toggles the program_enabled variable,
+        and changes the text of the button to reflect the new state of the program.
 
-    Args:
-        None
+        Args:
+            None
 
-    Returns:
-        None
+        Returns:
+            None
 
-    Calls:
-        None
+        Calls:
+            None
 
-    Called by:
-        toggle_button.clicked.connect(toggle_program)
+        Called by:
+            toggle_button.clicked.connect(toggle_program)
 
-    Example: 
-        toggle_button.clicked.connect(toggle_program)
-    """
-    # This function is called when the button is pressed. The program_enabled variable is
-    # toggled, and the text of the button is changed to reflect the new state of the program.
-    global program_enabled
-    program_enabled = not program_enabled
-    toggle_button.setText("Toggle ON" if program_enabled else "Toggle OFF")
-   
-    # The list widget is cleared, so that it does not contain any suggestions from before
-    autocomplete_window.list_widget.clear()
-
-def get_suggestions(current_word):
-    """
-    This function returns a list of suggestions for the current word.
-
-    The suggestions are found using the trie data structure. The trie is used to find words that start with the current word,
-    words that end with the current word, and words that contain the current word. The suggestions are then sorted by length,
-    with the shortest suggestions first.
-
-    Args:
-        current_word (str): The current word that the user is typing.
-
-    Returns:
-        list: A list of suggestions for the current word.
-
-    Calls:
-        Trie.search: Search for words that start with the current word.
-        Trie.search_containing: Search for words that contain the current word
-
-    Example:
-        get_suggestions("py")
+        Example: 
+            toggle_button.clicked.connect(toggle_program)
+        """
+        # This function is called when the button is pressed. The program_enabled variable is
+        # toggled, and the text of the button is changed to reflect the new state of the program.
+        global program_enabled
+        program_enabled = not program_enabled
+        toggle_button.setText("Toggle ON" if program_enabled else "Toggle OFF")
     
-    """
-    # This function uses the trie data structure to find suggestions for the current word.
-    # It first checks for words that start with the current word, then for words that end with the current word.
-    # It then checks for words that contain the current word, but do not start or end with the current word.
-    # The function returns a list of suggestions sorted by length, with the shortest suggestions first.
-    suggestions_start = trie_start.search(current_word, max_suggestions=5)
-    suggestions_end = trie_end.search(current_word, reverse=True, max_suggestions=3)
-    
-    existing_suggestions = set(suggestions_start + [word[::-1] for word in suggestions_end])
-    all_suggestions = trie_start.search_containing(current_word)
-    suggestions_containing = [
-        word for word in all_suggestions 
-        if word not in existing_suggestions
-        and not word.startswith(current_word)
-        and not word.endswith(current_word)
-    ][:2]
+        # The list widget is cleared, so that it does not contain any suggestions from before
+        autocomplete_window.list_widget.clear()
 
-    suggestions = suggestions_start[:]
-    for word in suggestions_end:
-        reversed_word = word[::-1]
-        if reversed_word not in suggestions_start:
-            suggestions.append(reversed_word)
-    for word in suggestions_containing:
-        if word not in suggestions_start and word not in suggestions_end:
-            suggestions.append(word)
-    
-    suggestions.sort(key=len)
-    return suggestions
+    def get_suggestions(self):
+        """
+        This function returns a list of suggestions for the current word.
 
-def process_key(e, settings):
-    """
-    This function is called when a key is pressed. It checks if the key is the key used to trigger
-    auto-complete, and if so, it calls the autocomplete_and_replace function. If the key is the backspace
-    key, it removes the last character from the current word and updates the suggestions. If the key is
-    any other key, it adds the key to the current word and updates the suggestions.
+        The suggestions are found using the trie data structure. The trie is used to find words that start with the current word,
+        words that end with the current word, and words that contain the current word. The suggestions are then sorted by length,
+        with the shortest suggestions first.
 
-    Args:
-        e (keyboard.KeyboardEvent): The keyboard event that was triggered
-        settings (Settings): The settings object
+        Args:
+            current_word (str): The current word that the user is typing.
 
-    Returns:
-        None
+        Returns:
+            list: A list of suggestions for the current word.
 
-    Calls:
-        - autocomplete_and_replace(current_word)
-        - update_suggestions(current_word)
-        - get_suggestions(current_word)
-        - auto_correct(current_word)
+        Calls:
+            Trie.search: Search for words that start with the current word.
+            Trie.search_containing: Search for words that contain the current word
 
-    Called by:
-        - keyboard.hook(lambda e: process_key(e, settings
+        Example:
+            get_suggestions("py")
+        
+        """
+        # This function uses the trie data structure to find suggestions for the current word.
+        # It first checks for words that start with the current word, then for words that end with the current word.
+        # It then checks for words that contain the current word, but do not start or end with the current word.
+        # The function returns a list of suggestions sorted by length, with the shortest suggestions first.
+        suggestions_start = trie_start.search(self, max_suggestions=5)
+        suggestions_end = trie_end.search(self, reverse=True, max_suggestions=3)
 
-    Example:
-        process_key(e, settings)
-    """
-    # This function is called when a key is pressed. It checks if the key is the key used to trigger
-    # auto-complete, and if so, it calls the autocomplete_and_replace function. If the key is the backspace
-    # key, it removes the last character from the current word and updates the suggestions. If the key is
-    # any other key, it adds the key to the current word and updates the suggestions.
-    global current_word, autocomplete_window, program_enabled
+        existing_suggestions = set(suggestions_start + [word[::-1] for word in suggestions_end])
+        all_suggestions = trie_start.search_containing(self)
+        suggestions_containing = [
+            word for word in all_suggestions 
+            if word not in existing_suggestions
+            and not word.startswith(current_word)
+            and not word.endswith(current_word)
+        ][:2]
 
-    # If the program is disabled, return immediately
-    if not program_enabled:
-        return
-    
-    # if the user presses the autocomplete key, start autocompleting
-    if settings.autocomplete_key == e.name:
-        # key is pressed down
+        suggestions = suggestions_start[:]
+        for word in suggestions_end:
+            reversed_word = word[::-1]
+            if reversed_word not in suggestions_start:
+                suggestions.append(reversed_word)
+        for word in suggestions_containing:
+            if word not in suggestions_start and word not in suggestions_end:
+                suggestions.append(word)
+
+        suggestions.sort(key=len)
+        return suggestions
+
+    def is_program_disabled():
+        return not program_enabled
+
+    def is_autocomplete_key(self, settings):
+        return settings.autocomplete_key == self.name
+
+    def handle_autocomplete_key(self, e):
         if e.event_type == "down":
-            # get the current word
             autocomplete_and_replace(current_word)
 
-    # when the user presses backspace, delete the entire word
-    elif e.name == "backspace":
+    def is_backspace_key(self):
+        return self.name == "backspace"
+
+    def handle_backspace_key(self, e):
         if e.event_type == "down":
             keyboard.press('ctrl+backspace')
             keyboard.release('ctrl+backspace')
             autocomplete_window.list_widget.clear()
 
-    # if the user types a letter, add it to the current word
-    elif len(e.name) == 1:
-        if e.event_type == "down":
-            current_word += e.name
-            if len(current_word) == 0:
-                autocomplete_window.list_widget.clear()
+    def is_character_key(self):
+        return len(self.name) == 1
+
+    def handle_character_key(self):
+        if self.event_type == "down":
+            current_word += self.name
             if len(current_word) > 2:
-                suggestions = get_suggestions(current_word)
+                suggestions = self.get_suggestions(current_word)
                 suggestion_list_active = bool(suggestions)
                 autocomplete_window.update_suggestions(suggestions)
 
-    # Perform auto-correction on spacebar or backspace press
-    if settings.auto_correct_enabled and e.name in ['space'] and e.event_type == "down":
+    def should_auto_correct(self, settings):
+        return (
+            settings.auto_correct_enabled
+            and self.name in ['space']
+            and self.event_type == "down"
+        )
+
+    def handle_auto_correction():
         auto_correct(current_word)
 
-    # Clear the suggestions when spacebar, enter, or tab is pressed
-    if e.name in ['space', 'enter', 'tab'] and e.event_type == 'down':
+    def should_clear_suggestions(self):
+        return (
+            self.name in ['space', 'enter', 'tab', 'ctrl']
+            and self.event_type == 'down'
+        )
+
+    def handle_clear_suggestions():
         current_word = ""
         autocomplete_window.list_widget.clear()
+
+    def process_key(self, e, settings):
+        if self.is_program_disabled():
+            return
+
+        if self.is_autocomplete_key(e, settings):
+            self.handle_autocomplete_key()
+        elif self.is_backspace_key(e):
+            self.handle_backspace_key()
+        elif self.is_character_key(e):
+            self.handle_character_key(e)
+
+        if self.should_auto_correct(self, e, settings):
+            self.handle_auto_correction()
+
+        if self.should_clear_suggestions(self, e):
+            self.handle_clear_suggestions()
+
 
 def current_to_corrected(current_word: str, corrected_word: str) -> None:
     """
@@ -1077,19 +1085,19 @@ suggestion_list_active = False
 
 word_list_manager = WordListManager()
 
-word_list_manager.load_word_list(name="Unnoticable", filename="unnoticable.txt")
-word_list_manager.load_word_list(name="Risky", filename="risky.txt")
-word_list_manager.load_word_list(name="BestList", filename="BestList.txt")
-word_list_manager.load_word_list(name="Suspicious", filename="BABYHACKER.txt")
-word_list_manager.load_word_list(name="Obvious", filename="EXTREMEHACKER.txt")
+word_list_manager.load_word_list(name="Unnoticable", filename=UNNOTICABLE_WORD_LIST_FILENAME)
+word_list_manager.load_word_list(name="Risky", filename=RISKY_WORD_LIST_FILENAME)
+word_list_manager.load_word_list(name="BestList", filename=BESTLIST_WORD_LIST_FILENAME)
+word_list_manager.load_word_list(name="Suspicious", filename=BABYHACKER_WORD_LIST_FILENAME)
+word_list_manager.load_word_list(name="Obvious", filename=EXTREMEHACKER_WORD_LIST_FILENAME)
 
-word_list_manager.load_word_list("Custom", "Custom.txt")
+word_list_manager.load_word_list(name="Custom", filename=CUSTOM_WORD_LIST_FILENAME)
 
 # Validate the word lists
 if not word_list_manager.validate_word_lists():
     logger.error("One or more required word lists were not found. Exiting application.")
     sys.exit(1)
-    
+
 app = QApplication(sys.argv)
 autocomplete_window = AutocompleteWindow()
 
